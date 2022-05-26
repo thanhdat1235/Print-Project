@@ -1,12 +1,14 @@
 const User = require("../../model/user");
 const bcryptjs = require("bcryptjs");
 const statusAPI = require("../../utils/statusAPI");
+const { sendEmail } = require("../../utils/sendMail");
 
 const {
   redisClient,
   generateToken,
   destroyToken,
 } = require("../../middleware/jwt");
+const { deleteMany } = require("../../model/user");
 
 let randomFixedInteger = function (length) {
   return Math.floor(
@@ -30,6 +32,9 @@ class AdminController {
       if (oldUser) {
         return res.status(409).send({ messages: "Email already exists" });
       }
+
+      const otp_code = randomFixedInteger(6);
+
       const encryptedPassword = await bcryptjs.hash(password, 10);
       const user = await User.create({
         first_name,
@@ -37,16 +42,24 @@ class AdminController {
         email: email.toLowerCase(), // sanitize: convert email to lowercase
         password: encryptedPassword,
         created_at: new Date(),
-        gender: "other",
-        address: "",
-        otp_code: null,
+        gender,
+        address,
+        otp_code: otp_code,
         role: "user",
       });
       if (!user) {
-        return res.status(404).send({ message: "Create account failed" });
+        return res
+          .status(statusAPI.BAD_REQUEST.code)
+          .send({ message: "Create account failed" });
       }
-      console.log(user);
-      return res.status(statusAPI.CREATED.code).json(user);
+      const subject = "Mã xác thực OTP";
+      const htmlContent = `<p>Ma OTP cua ban la: ${otp_code}</p>`;
+      const resSendEmail = await sendEmail(email, subject, htmlContent);
+      if (!resSendEmail)
+        return res.status(500).send({ message: "Send OTP failed" });
+      return res
+        .status(statusAPI.CREATED.code)
+        .send({ message: "OTP sended to your email account" });
     } catch (error) {
       throw error;
     }
@@ -174,5 +187,84 @@ class AdminController {
       throw error;
     }
   }
+
+  // Verify OTP
+  async verify(req, res) {
+    const email = req.params.email;
+    const { OTP } = req.body;
+    const user = await User.findOne({ email });
+    if (!user)
+      return res
+        .status(404)
+        .send({ message: "User with email does not already exists" });
+    if (OTP !== user.otp_code) {
+      return res.status(400).send({ message: "Invalid OTP" });
+    }
+    return res.status(200).send({ message: "Verify OTP successfully" });
+  }
+
+  // Forgotpassword
+
+  async forgotpassword(req, res) {
+    const { email } = req.body;
+    const user = await User.findOne({ email });
+
+    if (!user)
+      return res
+        .status(statusAPI.BAD_REQUEST.code)
+        .send({ message: "User with email does not already exists" });
+
+    const otp_code = randomFixedInteger(6);
+
+    const updateUser = await User.findOneAndUpdate(
+      { email },
+      { otp_code: otp_code },
+      { upsert: true }
+    );
+    console.log(otp_code);
+    if (!updateUser) {
+      return res.status(404).send({ message: "Update OTP failed" });
+    }
+
+    const subject = "Mã xác thực OTP";
+    const htmlContent = `<p>Ma OTP cua ban la: ${otp_code}</p>`;
+    const resSendEmail = await sendEmail(email, subject, htmlContent);
+
+    if (!resSendEmail)
+      return res.status(500).send({ message: "Send OTP failed" });
+
+    return res
+      .status(200)
+      .send({ message: "OTP sended to your email account" });
+  }
+
+  // ResetPassword
+  async resetPassword(req, res) {
+    const email = req.params.email;
+    const { password } = req.body;
+    const encryptedPassword = await bcryptjs.hash(password, 10);
+    try {
+      const user = await User.findOneAndUpdate(
+        { email },
+        { password: encryptedPassword },
+        { upsert: true }
+      );
+      res.status(200).send({ message: "Password updated successfully" });
+    } catch (error) {
+      console.log(error);
+    }
+  }
+  // Delete many
+  async deleteMany(req, res) {
+    const ids = req.body.params;
+    console.log(ids);
+    await User.remove({ _id: { $in: ids } });
+    return res.status(200).send("Delete successfully");
+  }
+  catch(error) {
+    console.error(error);
+    throw new Error({ message: "Loi roi" });
+  }
 }
+
 module.exports = new AdminController();

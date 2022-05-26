@@ -18,7 +18,7 @@ function authManagerRole(req, res, next) {
 function authAdminRole(req, res, next) {
   const roles = ["admin"];
 
-  if (!roles.includes(req.user.role)) {
+  if (!roles.includes(req.user.role?.toLowerCase())) {
     return res.sendStatus(403);
   }
   next();

@@ -24,7 +24,7 @@ async function createRedisClient() {
 const generateToken = async (id, email, role) => {
   const redisClient = await createRedisClient();
   const token = jwt.sign({ user_id: id, email, role }, config.TOKEN_KEY, {
-    expiresIn: "30m",
+    expiresIn: "1h",
   });
 
   const check = await redisClient.exists(token);

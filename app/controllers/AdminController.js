@@ -45,7 +45,7 @@ class AdminController {
         gender,
         address,
         otp_code: otp_code,
-        role: "user",
+        role: "User",
       });
       if (!user) {
         return res
@@ -168,6 +168,7 @@ class AdminController {
   async updateUser(req, res) {
     try {
       const id = req.params.id;
+      console.log(id);
       const user = await User.findByIdAndUpdate(id, req.body, { new: true });
       return res.json(user);
     } catch (error) {
@@ -191,13 +192,13 @@ class AdminController {
   // Verify OTP
   async verify(req, res) {
     const email = req.params.email;
-    const { OTP } = req.body;
+    const { otp_code } = req.body;
     const user = await User.findOne({ email });
     if (!user)
       return res
         .status(404)
         .send({ message: "User with email does not already exists" });
-    if (OTP !== user.otp_code) {
+    if (otp_code !== user.otp_code) {
       return res.status(400).send({ message: "Invalid OTP" });
     }
     return res.status(200).send({ message: "Verify OTP successfully" });
@@ -242,15 +243,30 @@ class AdminController {
   async resetPassword(req, res) {
     const email = req.params.email;
     const { password } = req.body;
+    const user = await User.findOne({ email });
     const encryptedPassword = await bcryptjs.hash(password, 10);
+    let errors = {};
+    if (!email) {
+      errors.email = "Email is required";
+    }
+
+    if (!password) {
+      errors.password = "Password is required";
+    }
+
+    if (Object.keys(errors).length > 0) {
+      res.status(400).send({ message: JSON.stringify(errors) });
+    }
+
+    if (!user) {
+      res.status(400).send({ message: "User not found!" });
+    }
+
     try {
-      const user = await User.findOneAndUpdate(
-        { email },
-        { password: encryptedPassword },
-        { upsert: true }
-      );
+      await User.findOneAndUpdate({ email }, { password: encryptedPassword });
       res.status(200).send({ message: "Password updated successfully" });
     } catch (error) {
+      res.status(400).send({ message: "Error when update password!" });
       console.log(error);
     }
   }
@@ -264,6 +280,25 @@ class AdminController {
   catch(error) {
     console.error(error);
     throw new Error({ message: "Loi roi" });
+  }
+
+  // Search
+  async search(req, res) {
+    const payload = req.body.payload.trim().replace(/[^a-zA-Z0-9 \s\s+]/g, " ");
+    const search = await User.find({
+      $or: [
+        { first_name: { $regex: `${payload}`, $options: "i" } },
+        { last_name: { $regex: `${payload}`, $options: "i" } },
+        { address: { $regex: `${payload}`, $options: "i" } },
+        { email: { $regex: `${payload}`, $options: "i" } },
+      ],
+    });
+    if (payload) {
+      res.status(200).json({ payload: search });
+    } else {
+      const result = await User.find({}, { password: 0 });
+      res.status(200).json({ payload: result });
+    }
   }
 }
 

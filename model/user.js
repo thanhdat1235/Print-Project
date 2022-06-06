@@ -17,5 +17,5 @@ const userSchema = new mongoose.Schema({
   otp_code: { type: String, default: null },
   resetLink: { data: String, default: "" },
 });
-
+userSchema.index({ "$**": "text" });
 module.exports = mongoose.model("user", userSchema);

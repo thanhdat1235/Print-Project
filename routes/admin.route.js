@@ -5,6 +5,8 @@ const { authAdminRole, authManagerRole } = require("../middleware/authenRoles");
 
 const adminController = require("../app/controllers/AdminController");
 
+router.post("/search", adminController.search);
+
 router.delete("/delete-many", adminController.deleteMany);
 
 router.post("/reset-password/:email", adminController.resetPassword);
@@ -15,7 +17,7 @@ router.post("/verify-otp/:email", adminController.verify);
 
 router.delete("/delete/:id", auth, authAdminRole, adminController.deleteOne);
 
-router.put("/update/:id", auth, authManagerRole, adminController.updateUser);
+router.put("/update/:id", auth, authAdminRole, adminController.updateUser);
 
 router.get("/user/:id", auth, adminController.findOne);
 

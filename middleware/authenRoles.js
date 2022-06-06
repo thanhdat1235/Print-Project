@@ -1,5 +1,5 @@
 function authBasicRole(req, res, next) {
-  const roles = ["user", "admin", "manager"];
+  const roles = ["User", "Admin", "Manager"];
 
   if (roles.includes(req.role)) next();
 
@@ -7,7 +7,7 @@ function authBasicRole(req, res, next) {
 }
 
 function authManagerRole(req, res, next) {
-  const roles = ["admin", "manager"];
+  const roles = ["Admin", "Manager"];
 
   if (!roles.includes(req.user.role)) {
     return res.sendStatus(403);
@@ -16,7 +16,7 @@ function authManagerRole(req, res, next) {
 }
 
 function authAdminRole(req, res, next) {
-  const roles = ["admin"];
+  const roles = ["Admin"];
 
   if (!roles.includes(req.user.role?.toLowerCase())) {
     return res.sendStatus(403);

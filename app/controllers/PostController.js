@@ -4,6 +4,7 @@ const statusAPI = require("../../utils/statusAPI");
 class PostController {
   async createPost(req, res) {
     const { category, title, ckeditor } = req.body;
+    console.log(req.body);
     try {
       const post = await Post.create({
         category,
@@ -60,11 +61,7 @@ class PostController {
 
   async updatePost(req, res) {
     const id = req.params.id;
-    console.log(id);
     try {
-      const pageSize = parseInt(req.query.pageSize);
-      const page = parseInt(req.query.page);
-      const skip = (page - 1) * pageSize;
       const post = await Post.findByIdAndUpdate(id, req.body, { new: true });
       return res.status(statusAPI.ACCEPTED.code).json(post);
     } catch (error) {
@@ -74,12 +71,22 @@ class PostController {
 
   async delete(req, res) {
     try {
-      const ids = req.body.params;
+      const ids = req.body;
       console.log(ids);
       await Post.remove({ _id: { $in: ids } });
       return res
         .status(statusAPI.ACCEPTED.code)
         .send({ message: "Delete successfully!" });
+    } catch (error) {
+      console.log(error);
+    }
+  }
+
+  async findById(req, res) {
+    try {
+      const id = req.params.id;
+      const postUpdated = await Post.findById(id).exec();
+      return res.status(statusAPI.OK.code).json(postUpdated);
     } catch (error) {
       console.log(error);
     }

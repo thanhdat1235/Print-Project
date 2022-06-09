@@ -1,23 +1,28 @@
 const Post = require("../../model/post");
 const statusAPI = require("../../utils/statusAPI");
+const decodedBase64 = require("../../utils/write");
 
 class PostController {
   async createPost(req, res) {
-    const { category, title, ckeditor } = req.body;
-    console.log(req.body);
+    const { category, title, description } = req.body;
+    const encoded = decodedBase64(req.body.ckeditor, `${title}.png`);
+    const ckeditor = encoded.linkImage;
+    const urlImage = encoded.link;
     try {
       const post = await Post.create({
         category,
         title,
         created_at: new Date(),
         ckeditor,
+        urlImage,
+        description,
       });
       if (!post) {
-        res.status(statusAPI.BAD_REQUEST.code).send({
-          message: "Create failed",
-        });
+        res
+          .status(statusAPI.BAD_REQUEST.code)
+          .send({ message: "Create post failed" });
       }
-      res.status(statusAPI.CREATED.code).json(post);
+      res.status(statusAPI.CREATED.code).send({ linkImage: encoded });
     } catch (error) {
       console.log(error);
     }
@@ -25,7 +30,7 @@ class PostController {
 
   async getAll(req, res) {
     try {
-      const pageSize = parseInt(req.query.pageSize);
+      const pageSize = parseInt(req.query.pageSize || 4);
       const page = parseInt(req.query.page);
       const skip = (page - 1) * pageSize;
       Post.countDocuments({}, async function (err, count) {
@@ -87,6 +92,33 @@ class PostController {
       const id = req.params.id;
       const postUpdated = await Post.findById(id).exec();
       return res.status(statusAPI.OK.code).json(postUpdated);
+    } catch (error) {
+      console.log(error);
+    }
+  }
+
+  async search(req, res) {
+    const payload = req.body.payload.trim().replace(/[^a-zA-Z0-9 \s\s+]/g, " ");
+    try {
+      const search = await Post.find({
+        $or: [
+          { category: { $regex: `${payload}`, $options: "i" } },
+          { title: { $regex: `${payload}`, $options: "i" } },
+        ],
+      });
+      if (payload) {
+        res.status(200).json({ payload: search });
+      }
+    } catch (error) {
+      console.log(error);
+    }
+  }
+
+  async searchByCategory(req, res) {
+    const category = req.params.category;
+    try {
+      const result = await Post.find({ category: category });
+      res.status(statusAPI.OK.code).json(result);
     } catch (error) {
       console.log(error);
     }

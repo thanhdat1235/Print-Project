@@ -11,6 +11,8 @@ const postSchema = new mongoose.Schema({
   comments: { type: String },
   created_at: { type: Date },
   ckeditor: { type: String },
+  urlImage: { type: String },
+  description: { type: String },
 });
 postSchema.index({ "$**": "text" });
 module.exports = mongoose.model("post", postSchema);

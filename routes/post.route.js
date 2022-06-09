@@ -5,7 +5,11 @@ const { authAdminRole, authManagerRole } = require("../middleware/authenRoles");
 
 const postController = require("../app/controllers/PostController");
 
-router.get("/findone/:id", auth, postController.findById);
+router.post("/search-by-category/:category", postController.searchByCategory);
+
+router.post("/search", postController.search);
+
+router.get("/findone/:id", postController.findById);
 
 router.delete("/delete", auth, authManagerRole, postController.delete);
 

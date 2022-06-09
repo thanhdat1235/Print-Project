@@ -25,6 +25,8 @@ app.use(
   })
 );
 
+app.use("/images", express.static("images"));
+
 app.use(express.json());
 
 // Logic goes here

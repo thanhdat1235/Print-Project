@@ -30,7 +30,7 @@ class PostController {
 
   async getAll(req, res) {
     try {
-      const pageSize = parseInt(req.query.pageSize || 4);
+      const pageSize = parseInt(req.query.pageSize || 6);
       const page = parseInt(req.query.page);
       const skip = (page - 1) * pageSize;
       Post.countDocuments({}, async function (err, count) {
@@ -107,7 +107,7 @@ class PostController {
         ],
       });
       if (payload) {
-        res.status(200).json({ payload: search });
+        return res.status(200).json({ payload: search });
       }
     } catch (error) {
       console.log(error);
@@ -118,7 +118,7 @@ class PostController {
     const category = req.params.category;
     try {
       const result = await Post.find({ category: category });
-      res.status(statusAPI.OK.code).json(result);
+      return res.status(statusAPI.OK.code).json(result);
     } catch (error) {
       console.log(error);
     }

@@ -272,16 +272,16 @@ class AdminController {
   }
   // Delete many
   async deleteMany(req, res) {
-    const ids = req.body.params;
-    console.log(ids);
-    await User.remove({ _id: { $in: ids } });
-    return res.status(200).send("Delete successfully");
-  }
-  catch(error) {
-    console.error(error);
-    throw new Error({ message: "Loi roi" });
-  }
+    const ids = req.body._id;
+    const query = { _id: { $in: ids } };
 
+    try {
+      await User.deleteMany(query);
+      res.status(statusAPI.OK.code).send({ message: "Thanh cong" });
+    } catch (error) {
+      console.log(error);
+    }
+  }
   // Search
   async search(req, res) {
     const payload = req.body.payload.trim().replace(/[^a-zA-Z0-9 \s\s+]/g, " ");

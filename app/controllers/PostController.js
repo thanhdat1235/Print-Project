@@ -76,8 +76,8 @@ class PostController {
 
   async delete(req, res) {
     try {
-      const ids = req.body;
-      console.log(ids);
+      const ids = req.body.id;
+      // console.log(ids);
       await Post.remove({ _id: { $in: ids } });
       return res
         .status(statusAPI.ACCEPTED.code)

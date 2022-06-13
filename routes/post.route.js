@@ -7,6 +7,8 @@ const postController = require("../app/controllers/PostController");
 
 router.post("/search-by-category/:category", postController.searchByCategory);
 
+router.delete("/delete/:id", auth, authManagerRole, postController.deleteOne);
+
 router.post("/search", postController.search);
 
 router.get("/findone/:id", postController.findById);

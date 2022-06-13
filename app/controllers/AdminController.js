@@ -13,7 +13,7 @@ const { deleteMany } = require("../../model/user");
 let randomFixedInteger = function (length) {
   return Math.floor(
     Math.pow(10, length - 1) +
-    Math.random() * (Math.pow(10, length) - Math.pow(10, length - 1) - 1)
+      Math.random() * (Math.pow(10, length) - Math.pow(10, length - 1) - 1)
   );
 };
 
@@ -272,7 +272,7 @@ class AdminController {
   }
   // Delete many
   async deleteMany(req, res) {
-    const ids = req.body.ids;
+    const ids = req.body.id;
     console.log(ids);
     const query = { _id: { $in: ids } };
     try {

@@ -5,6 +5,7 @@ const postSchema = new mongoose.Schema({
   _id: {
     type: mongoose.Schema.Types.ObjectId,
     auto: true,
+    dropDups: true,
   },
   category: { type: String },
   title: { type: String },

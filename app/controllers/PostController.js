@@ -5,7 +5,8 @@ const decodedBase64 = require("../../utils/write");
 class PostController {
   async createPost(req, res) {
     const { category, title, description } = req.body;
-    const encoded = decodedBase64(req.body.ckeditor, `${title}.png`);
+    const filename = title.trim().replace(/\s/g, "");
+    const encoded = decodedBase64(req.body.ckeditor, `${filename}.png`);
     const ckeditor = encoded.linkImage;
     const urlImage = encoded.link;
     try {
@@ -77,8 +78,8 @@ class PostController {
   async delete(req, res) {
     try {
       const ids = req.body.id;
-      // console.log(ids);
-      await Post.remove({ _id: { $in: ids } });
+      console.log(ids);
+      await Post.deleteMany({ _id: { $in: ids } });
       return res
         .status(statusAPI.ACCEPTED.code)
         .send({ message: "Delete successfully!" });
@@ -111,6 +112,18 @@ class PostController {
       }
     } catch (error) {
       console.log(error);
+    }
+  }
+
+  async deleteOne(req, res) {
+    try {
+      const id = req.params.id;
+      await Post.findByIdAndDelete(id, { new: true });
+      return res.status(200).json({
+        message: "Post deleted successfully",
+      });
+    } catch (error) {
+      throw error;
     }
   }
 

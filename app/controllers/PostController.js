@@ -5,6 +5,9 @@ const decodedBase64 = require("../../utils/write");
 class PostController {
   async createPost(req, res) {
     const { category, title, description } = req.body;
+    if (!category || !title || !description) {
+      return res.status(400).send("All input is required");
+    }
     const filename = title.trim().replace(/\s/g, "");
     const encoded = decodedBase64(req.body.ckeditor, `${filename}.png`);
     const ckeditor = encoded.linkImage;
@@ -67,6 +70,10 @@ class PostController {
 
   async updatePost(req, res) {
     const id = req.params.id;
+    const { category, title, description } = req.body;
+    if (!category || !title || !description) {
+      return res.status(400).send("All input is required");
+    }
     try {
       const post = await Post.findByIdAndUpdate(id, req.body, { new: true });
       return res.status(statusAPI.ACCEPTED.code).json(post);

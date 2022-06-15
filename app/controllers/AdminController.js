@@ -52,14 +52,15 @@ class AdminController {
           .status(statusAPI.BAD_REQUEST.code)
           .send({ message: "Create account failed" });
       }
-      const subject = "Mã xác thực OTP";
-      const htmlContent = `<p>Ma OTP cua ban la: ${otp_code}</p>`;
-      const resSendEmail = await sendEmail(email, subject, htmlContent);
-      if (!resSendEmail)
-        return res.status(500).send({ message: "Send OTP failed" });
-      return res
-        .status(statusAPI.CREATED.code)
-        .send({ message: "OTP sended to your email account" });
+      return res.status(statusAPI.CREATED.code).json(user);
+      // const subject = "Mã xác thực OTP";
+      // const htmlContent = `<p>Ma OTP cua ban la: ${otp_code}</p>`;
+      // const resSendEmail = await sendEmail(email, subject, htmlContent);
+      // if (!resSendEmail)
+      //   return res.status(500).send({ message: "Send OTP failed" });
+      // return res
+      //   .status(statusAPI.CREATED.code)
+      //   .send({ message: "OTP sended to your email account" });
     } catch (error) {
       throw error;
     }
@@ -169,6 +170,11 @@ class AdminController {
     try {
       const id = req.params.id;
       console.log(id);
+      const { first_name, last_name, gender, address, role } = req.body;
+
+      if (!first_name || !last_name || !role || !gender || !address) {
+        return res.status(400).send("All input is required");
+      }
       const user = await User.findByIdAndUpdate(id, req.body, { new: true });
       return res.json(user);
     } catch (error) {

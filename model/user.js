@@ -10,10 +10,8 @@ const userSchema = new mongoose.Schema({
   email: { type: String, unique: true },
   password: { type: String },
   token: { type: String },
-  address: { type: String },
   role: { type: String },
   created_at: { type: Date },
-  gender: { type: String },
   otp_code: { type: String, default: null },
   resetLink: { data: String, default: "" },
 });

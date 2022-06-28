@@ -24,7 +24,7 @@ async function createRedisClient() {
 const generateToken = async (id, email, role) => {
   const redisClient = await createRedisClient();
   const token = jwt.sign({ user_id: id, email, role }, config.TOKEN_KEY, {
-    expiresIn: "1h",
+    expiresIn: "60s",
   });
 
   const check = await redisClient.exists(token);
@@ -34,6 +34,17 @@ const generateToken = async (id, email, role) => {
   });
 
   return token;
+};
+
+const generateRefreshToken = (id, email, role) => {
+  const refresh_token = jwt.sign(
+    { user_id: id, email, role },
+    config.TOKEN_KEY,
+    {
+      expiresIn: "7d",
+    }
+  );
+  return refresh_token;
 };
 
 const destroyToken = async (token) => {
@@ -63,4 +74,5 @@ module.exports = {
   generateToken,
   destroyToken,
   verifyToken,
+  generateRefreshToken,
 };

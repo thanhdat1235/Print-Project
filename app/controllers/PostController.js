@@ -1,10 +1,12 @@
 const Post = require("../../model/post");
+const SubscribeNewPost = require("../../model/subcribenewpost");
 const statusAPI = require("../../utils/statusAPI");
 const decodedBase64 = require("../../utils/write");
+const { sendEmail } = require("../../utils/sendMail");
 
 class PostController {
   async createPost(req, res) {
-    const { category, title, description } = req.body;
+    const { category, title, description, linkPost } = req.body;
     if (!category || !title || !description) {
       return res.status(400).send("All input is required");
     }
@@ -15,6 +17,7 @@ class PostController {
     try {
       const post = await Post.create({
         category,
+
         title,
         created_at: new Date(),
         ckeditor,
@@ -22,11 +25,29 @@ class PostController {
         description,
       });
       if (!post) {
-        res
+        return res
           .status(statusAPI.BAD_REQUEST.code)
           .send({ message: "Create post failed" });
       }
+      const allCustomers = SubscribeNewPost.find();
+      if (!allCustomers) {
+        return res.status(404).send({ message: "Bad request" });
+      }
+      const htmlContent = `Day la bai viet moi nhat cua AddyPrin. Hay truy cap vao ${linkPost}${post._id.toString()} de xem chi tiet</p>`;
       res.status(statusAPI.CREATED.code).send({ linkImage: encoded });
+      Promise.all([allCustomers]).then((customers) => {
+        if (customers.length > 0) {
+          customers[0].forEach(async (customer) => {
+            try {
+              const email = customer.email;
+              await sendEmail(email, subject, htmlContent);
+              console.log("Thanh cong");
+            } catch (error) {
+              console.log(error);
+            }
+          });
+        }
+      });
     } catch (error) {
       console.log(error);
     }
@@ -98,15 +119,16 @@ class PostController {
   async findById(req, res) {
     try {
       const id = req.params.id;
-      const postUpdated = await Post.findById(id).exec();
-      return res.status(statusAPI.OK.code).json(postUpdated);
+      const post = await Post.findById(id).exec();
+      return res.status(statusAPI.OK.code).json(post);
     } catch (error) {
       console.log(error);
     }
   }
 
   async search(req, res) {
-    const payload = req.body.payload.trim().replace(/[^a-zA-Z0-9 \s\s+]/g, " ");
+    const payload = req.body.payload.replace(/[[`_|+\=?<>\{\}\[\]\\\/]/gi, "");
+    console.log(payload);
     try {
       const search = await Post.find({
         $or: [
@@ -115,6 +137,8 @@ class PostController {
         ],
       });
       if (payload) {
+        return res.status(200).json({ payload: search });
+      } else {
         return res.status(200).json({ payload: search });
       }
     } catch (error) {
@@ -139,6 +163,25 @@ class PostController {
     try {
       const result = await Post.find({ category: category });
       return res.status(statusAPI.OK.code).json(result);
+    } catch (error) {
+      console.log(error);
+    }
+  }
+
+  async newCustomer(req, res) {
+    const email = req.body.email;
+    const oldCustomer = await SubscribeNewPost.findOne({ email });
+    if (oldCustomer) {
+      return res.status(409).send({ messages: "Email already exists" });
+    }
+    if (!email) {
+      return res
+        .status(statusAPI.NOT_FOUND.code)
+        .send(statusAPI.NOT_FOUND.message);
+    }
+    try {
+      const Customer = await SubscribeNewPost.create({ email });
+      return res.status(statusAPI.CREATED.code).json(Customer);
     } catch (error) {
       console.log(error);
     }

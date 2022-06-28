@@ -2,11 +2,13 @@ const User = require("../../model/user");
 const bcryptjs = require("bcryptjs");
 const statusAPI = require("../../utils/statusAPI");
 const { sendEmail } = require("../../utils/sendMail");
+const jwtDecode = require("jwt-decode");
 
 const {
   redisClient,
   generateToken,
   destroyToken,
+  generateRefreshToken,
 } = require("../../middleware/jwt");
 const { deleteMany } = require("../../model/user");
 
@@ -21,10 +23,9 @@ class AdminController {
   // REGISTER
   async register(req, res) {
     try {
-      const { first_name, last_name, email, password, gender, address, role } =
-        req.body;
+      const { first_name, last_name, email, password } = req.body;
 
-      if (!email || !password || !first_name || !last_name || role) {
+      if (!email || !password || !first_name || !last_name) {
         return res.status(400).send("All input is required");
       }
 
@@ -42,8 +43,6 @@ class AdminController {
         email: email.toLowerCase(), // sanitize: convert email to lowercase
         password: encryptedPassword,
         created_at: new Date(),
-        gender,
-        address,
         otp_code: otp_code,
         role: "User",
       });
@@ -81,7 +80,7 @@ class AdminController {
           .status(statusAPI.BAD_REQUEST.code)
           .send(`All input is required: ${JSON.stringify(errors)}`);
       } else {
-        const user = await User.findOne({ email });
+        let user = await User.findOne({ email: email });
 
         if (user && (await bcryptjs.compare(password, user.password))) {
           // Create token
@@ -90,7 +89,16 @@ class AdminController {
             email,
             user.role
           );
+          // Generate refresh_token
+          const refresh_token = await generateRefreshToken(
+            user._id.toString(),
+            email,
+            user.role
+          );
           // user
+          delete user._doc.password;
+          user._doc.refresh_token = refresh_token;
+          console.log(refresh_token);
           return res.status(200).setHeader("Authorization", token).json(user);
         }
         return res.status(400).json({
@@ -99,6 +107,18 @@ class AdminController {
       }
     } catch (error) {
       throw error;
+    }
+  }
+
+  // Refresh Token
+  async refreshToken(req, res) {
+    try {
+      const { id, email, role } = jwtDecode(req.body.refresh_token);
+      const token = await generateToken(id, email, role);
+      console.log(token);
+      return res.status(200).setHeader("Authorization", token).json(user);
+    } catch (error) {
+      console.log(error);
     }
   }
 
@@ -199,6 +219,7 @@ class AdminController {
   async verify(req, res) {
     const email = req.params.email;
     const { otp_code } = req.body;
+    console.log(otp_code);
     const user = await User.findOne({ email });
     if (!user)
       return res
@@ -261,19 +282,19 @@ class AdminController {
     }
 
     if (Object.keys(errors).length > 0) {
-      res.status(400).send({ message: JSON.stringify(errors) });
+      return res.status(400).send({ message: JSON.stringify(errors) });
     }
 
     if (!user) {
-      res.status(400).send({ message: "User not found!" });
+      return res.status(400).send({ message: "User not found!" });
     }
 
     try {
       await User.findOneAndUpdate({ email }, { password: encryptedPassword });
-      res.status(200).send({ message: "Password updated successfully" });
+      return res.status(200).send({ message: "Password updated successfully" });
     } catch (error) {
-      res.status(400).send({ message: "Error when update password!" });
       console.log(error);
+      return res.status(400).send({ message: "Error when update password!" });
     }
   }
   // Delete many
@@ -290,7 +311,7 @@ class AdminController {
   }
   // Search
   async search(req, res) {
-    const payload = req.body.payload.trim().replace(/[^a-zA-Z0-9 \s\s+]/g, " ");
+    const payload = req.body.payload.replace(/[[`_|+\=?<>\{\}\[\]\\\/]/gi, "");
     const search = await User.find({
       $or: [
         { first_name: { $regex: `${payload}`, $options: "i" } },

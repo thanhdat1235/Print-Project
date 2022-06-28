@@ -5,6 +5,8 @@ const { authAdminRole, authManagerRole } = require("../middleware/authenRoles");
 
 const postController = require("../app/controllers/PostController");
 
+router.post("/sendmail", postController.newCustomer);
+
 router.post("/search-by-category/:category", postController.searchByCategory);
 
 router.delete("/delete/:id", auth, authManagerRole, postController.deleteOne);

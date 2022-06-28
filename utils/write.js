@@ -1,6 +1,6 @@
 const match = /"data:image\/([a-zA-Z]*);base64,([^\"]*)\"/g;
-let matches = /(https?:\/\/.*\.(?:png|jpg))/i;
-// let rpl = `<img.+?src\s*=\s*\'(.*?\.(jpg|bmp|png))'`;
+let matches = /<img.*?src="(.*?)"[^>]+>/g;
+let rpl = /<img src="|[ \t>"]|&nbsp;|alt="(.*?)"/g;
 
 // /<img.*?src="(.*?)"[^>]+>/g
 const str_replace = "data:image/jpeg;base64,";
@@ -17,7 +17,8 @@ function decodedBase64(str, filename) {
     const linkImage = str.replace(`${base64Data}`, link);
     return { linkImage, link };
   }
-  const link = str.match(matches)[0];
+  const linkMatch = str.match(matches)[0];
+  const link = linkMatch.match(/src="(.*?)"/)[1];
   const linkImage = str;
   return { linkImage, link };
 }
